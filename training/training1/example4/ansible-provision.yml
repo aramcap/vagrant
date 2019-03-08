@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+  - name: Install HTTPD
+    package:
+      name: httpd
+      state: present
+  - name: Start HTTPD
+    service:
+      name: httpd
+      state: started

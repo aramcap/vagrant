@@ -1,0 +1,78 @@
+Vagrant.configure("2") do |config|
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+{% for cluster in clusters %}
+{% for vm in cluster['vms'] %}
+    config.vm.define "{{ cluster['name'] }}-{{ vm['name'] }}" do |node|
+        node.vm.hostname = "{{ cluster['name'] }}-{{ vm['name'] }}"
+{% if cluster['provider'] == 'libvirt' %}
+        node.vm.box = "{{ vm['box'] }}"
+        node.vm.provider "libvirt" do |provider|
+            provider.uri = 'qemu+unix:///system'
+            provider.driver = 'kvm'
+            provider.memory = "{{ vm['mem'] }}"
+            provider.cpus = "{{ vm['cpu'] }}"
+        end
+{% elif cluster['provider'] == 'virtualbox' %}
+        node.vm.box = "{{ vm['box'] }}"
+        node.vm.provider "virtualbox" do |provider| 
+            provider.memory = "{{ vm['mem'] }}"
+            provider.cpus = "{{ vm['cpu'] }}"
+        end
+{% elif cluster['provider'] == 'docker' %}
+        node.ssh.username = "root"
+        node.ssh.password = "root"
+        node.vm.provider "docker" do |provider|
+            provider.image = "{{ vm['box'] }}"
+            provider.has_ssh = true
+{% if vm.ports %}
+            provider.ports = "{{ vm['ports'] }}"
+{% endif %}
+        end
+{% else %}
+        fail Vagrant::Errors::VagrantError.new, "Provider '{{ cluster['provider'] }}' unknown or not configured in VF_generator"
+{% endif %}
+{% if vm.net %}
+{% for net in vm['net'] %}
+{% if net['network'] == 'private_network' %}
+        node.vm.network "private_network", ip: "{{ net['ip'] }}"
+{% elif net['network'] == 'public_network' %}
+{% if net.ip %}
+        node.vm.network "public_network", type: "bridge", dev: "{{ net['dev'] }}",  mode: "bridge", ip: "{{ net['ip'] }}"
+{% else %}
+        node.vm.network "public_network", type: "bridge", dev: "{{ net['dev'] }}",  mode: "bridge"
+{% endif %}
+{% elif net['network'] == 'forwarded_port' %}
+{% if net.host_ip %}
+        node.vm.network "forwarded_port", guest: {{ net['guest'] }}, host: {{ net['host'] }}, host_ip: "{{ net['host_ip'] }}"
+{% else %}
+        node.vm.network "forwarded_port", guest: {{ net['guest'] }}, host: {{ net['host'] }}
+{% endif %}
+{% else %}
+        fail Vagrant::Errors::VagrantError.new, "Network '{{ net['network'] }}' unknown or not configured in VF_generator"
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if vm.provision %}
+{% for provision in vm['provision'] %}
+{% if provision['provisioner'] == 'shell-inline' %}
+        node.vm.provision "shell", inline: "{{ provision['payload'] }}"
+{% elif provision['provisioner'] == 'shell-external' %}
+        node.vm.provision "shell", path: "{{ provision['payload'] }}"
+{% elif provision['provisioner'] == 'ansible' %}
+        node.vm.provision "ansible" do |ansible|
+            ansible.compatibility_mode = "2.0"
+            ansible.playbook = "{{ provision['payload'] }}"
+{% if cluster['provider'] == 'docker' %}
+            ansible.raw_arguments = "-k"
+{% endif %}
+        end
+{% else %}
+        fail Vagrant::Errors::VagrantError.new, "Provisioner '{{ provision['provisioner'] }}' unknown or not configured in VF_generator"
+{% endif %}
+{% endfor %}
+{% endif %}
+    end
+{% endfor %}
+{% endfor %}
+end

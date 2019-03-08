@@ -1,0 +1,62 @@
+---
+- name: cluster1
+  provider: docker # libvirt or virtualbox or docker
+  vms:
+  - name: vm01
+    box: centos-ssh
+
+# Docker provider not support net tag (ports is optional tag)
+# - name: cluster1
+#   provider: docker # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos-ssh
+#     ports:
+#       - "10023:23"
+
+# Example with provision (optional tag)
+# - name: cluster1
+#   provider: docker # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos-ssh
+#     provision:
+#     - provisioner: shell-inline # shell-inline, shell-external, ansible
+#       payload: "echo Hello > /home/vagrant/hello; chown vagrant:vagrant /home/vagrant/hello"
+
+# - name: cluster1
+#   provider: docker # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos-ssh
+#     provision:
+#     - provisioner: ansible # shell-inline, shell-external, ansible
+#       payload: "playbook.yml"
+
+# Libvirt or Virtualbox providers not support ports tag
+# - name: cluster1
+#   provider: virtualbox # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos/7
+#     mem: 1024
+#     cpu: 2
+
+# Example with network (optional tag)
+# - name: cluster1
+#   provider: virtualbox # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos/7
+#     mem: 1024
+#     cpu: 2
+#     net:
+#     - network: private_network
+#       ip: 192.168.99.100
+#     - network: public_network
+#       dev: br01
+#     - network: forwarded_port
+#       guest: 80
+#       host: 8080
+#       host_ip: 127.0.0.1
+
