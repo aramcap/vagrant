@@ -15,13 +15,24 @@ Vagrant.configure("2") do |config|
         end
 {% elif cluster['provider'] == 'virtualbox' %}
         node.vm.box = "{{ vm['box'] }}"
-        node.vm.provider "virtualbox" do |provider| 
+        node.vm.provider "virtualbox" do |provider|
             provider.memory = "{{ vm['mem'] }}"
             provider.cpus = "{{ vm['cpu'] }}"
+{% if vm.disks %}
+            unless File.exist?("{{ vm.disks[0]['local_path'] }}")
+                provider.customize ["storagectl", :id,  "--name", "SATA", "--add", "sata"]
+            end
+{% for disk in vm['disks'] %}
+            unless File.exist?("{{ disk['local_path'] }}")
+                provider.customize ["createhd", "--filename", "{{ disk['local_path'] }}", "--size", {{ disk['size'] }} * 1024]
+            end
+            provider.customize ["storageattach", :id,  "--storagectl", "SATA", "--port", {{ loop.index }}, "--type", "hdd", "--medium", "{{ disk['local_path'] }}"]
+{% endfor %}
+{% endif %}
         end
 {% elif cluster['provider'] == 'docker' %}
-        node.ssh.username = "root"
-        node.ssh.password = "root"
+        node.ssh.username = "vagrant"
+        node.ssh.password = "vagrant"
         node.vm.provider "docker" do |provider|
             provider.image = "{{ vm['box'] }}"
             provider.has_ssh = true
@@ -31,6 +42,10 @@ Vagrant.configure("2") do |config|
         end
 {% else %}
         fail Vagrant::Errors::VagrantError.new, "Provider '{{ cluster['provider'] }}' unknown or not configured in VF_generator"
+{% endif %}
+{% if vm.ssh_guest_port %}
+        node.ssh.guest_port = {{ vm['ssh_guest_port'] }}
+        node.vm.network "forwarded_port", guest: {{ vm['ssh_guest_port'] }}, host: {{ vm['ssh_guest_port'] }}
 {% endif %}
 {% if vm.net %}
 {% for net in vm['net'] %}
@@ -64,7 +79,7 @@ Vagrant.configure("2") do |config|
             ansible.compatibility_mode = "2.0"
             ansible.playbook = "{{ provision['payload'] }}"
 {% if cluster['provider'] == 'docker' %}
-            ansible.raw_arguments = "-k"
+            ansible.inventory_path = "inventory"
 {% endif %}
         end
 {% else %}

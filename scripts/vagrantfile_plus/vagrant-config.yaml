@@ -50,15 +50,8 @@
 #     box: centos/7
 #     mem: 1024
 #     cpu: 2
-#     disks:
-#     - local_path: ./disk1.vdi
-#       size: 20 # GBs
 #     net:
 #     - network: private_network
 #       ip: 192.168.99.100
 #     - network: public_network
 #       dev: br01
-#     - network: forwarded_port
-#       guest: 80
-#       host: 8080
-#       host_ip: 127.0.0.1

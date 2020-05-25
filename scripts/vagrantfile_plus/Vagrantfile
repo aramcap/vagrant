@@ -1,0 +1,102 @@
+require 'yaml'
+
+VAGRANTFILE_API_VERSION = "2"
+
+def fail_with_message(msg)
+    fail Vagrant::Errors::VagrantError.new, msg
+end
+
+# Read YAML file with cluster details
+config_file = 'vagrant-config.yaml'
+if File.exists?(config_file)
+    clusters = YAML.load_file(config_file)
+else
+    fail_with_message "#{config_file} was not found."
+end
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    # Disabling the default /vagrant share
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    # Cluster definition
+    clusters.each do |cluster|
+        # VM definition
+        cluster["vms"].each do |vm|
+            vm_fullname = cluster["name"]+"-"+vm["name"]
+            # Config definition
+            config.vm.define vm_fullname do |node|
+                node.vm.hostname = vm_fullname
+
+                # VM resources definition
+                if cluster["provider"] == "libvirt"
+                    # VM KVM resources definition
+                    node.vm.box = vm["box"]
+                    node.vm.provider "libvirt" do |provider|
+                        provider.uri = 'qemu+unix:///system'
+                        provider.driver = 'kvm'
+                        provider.memory = vm["mem"]
+                        provider.cpus = vm['cpu']
+                    end # node.vm.provider
+                elsif cluster["provider"] == "virtualbox"
+                    # VM VBOX resources definition
+                    node.vm.box = vm["box"]
+                    node.vm.provider "virtualbox" do |provider| 
+                        provider.memory = vm["mem"]
+                        provider.cpus = vm['cpu']
+                    end # node.vm.provider
+                elsif cluster["provider"] == "docker"
+                    # VM VBOX resources definition
+                    node.ssh.username = "root"
+                    node.ssh.password = "root"
+                    node.vm.provider "docker" do |provider| 
+                        provider.image = vm["box"]
+                        provider.has_ssh = true
+
+                        if vm.key?('ports')
+                            provider.ports = vm["ports"]
+                        end # if vm.key
+
+                    end # node.vm.provider
+                else
+                    fail_with_message "Provider '#{cluster["provider"]}' not exist"
+                end # if cluster["driver"]
+
+                # VM network definition
+                if vm.key?('net')
+                    vm["net"].each do |net|
+                        if net["network"] == "private_network"
+                            # Private host bridge
+                            node.vm.network net["network"], ip: net["ip"]
+                        elsif net["network"] == "public_network"
+                            if net.key?('ip')
+                                # Public host bridge STATIC
+                                node.vm.network net["network"], type: "bridge", dev: net["dev"],  mode: "bridge", ip: net["ip"]
+                            else
+                                # Public host bridge DHCP
+                                node.vm.network net["network"], type: "bridge", dev: net["dev"],  mode: "bridge"
+                            end # if net.key
+                        end
+                    end # vm["net"].each
+                end # if vm.key
+
+                # VM provision
+                if vm.key?('provision')
+                    vm["provision"].each do |prov|
+                        if prov["provisioner"] == "shell-inline"
+                            node.vm.provision "shell", inline: prov["payload"]
+                        elsif prov["provisioner"] == "shell-external"
+                            node.vm.provision "shell", path: prov["payload"]
+                        elsif prov["provisioner"] == "ansible"
+                            node.vm.provision "ansible" do |ansible|
+                                ansible.playbook = prov["payload"]
+                            end # config.vm.provision
+                        else
+                            fail_with_message "Provisioner '#{prov["provisioner"]}' not exist"
+                        end # if prov["type"]
+                    end # vm["provision"].each
+                end # if vm.key
+
+            end # config.vm.define
+        end # cluster["vms"].each
+    end # clusters.each
+end # Vagrant.configure
