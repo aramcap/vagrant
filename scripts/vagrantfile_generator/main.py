@@ -2,6 +2,7 @@ import sys, os
 import yaml
 import jinja2 as j2
 import subprocess
+import re
 
 def loadfile(file):
     try:
@@ -29,7 +30,7 @@ def sshconfig(stdout):
     for elem in sshconfig:
         obj = elem.lstrip().split(" ")
         if 'Host ' in elem:
-            host_tmp[obj[0]] = obj[1]
+            host_tmp[obj[0]] = re.sub(r'[^\w]', '', obj[1])
         elif 'HostName ' in elem:
             host_tmp[obj[0]] = obj[1]
         elif 'User ' in elem:
