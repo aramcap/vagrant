@@ -80,7 +80,8 @@ if __name__ == "__main__":
     elif sys.argv[1] == "--ansible-inventory":
         inventory = sshconfig(subprocess.run(['vagrant','ssh-config'], stdout=subprocess.PIPE).stdout)
         di = template_inventory(inventory)
-        writefile(di, "inventory")
+        #writefile(di, "inventory")
+        print(di)
     else:
         FILE_NAME = sys.argv[1]
         yaml = loadfile(FILE_NAME)
