@@ -1,3 +1,16 @@
+#
+# Vagrantfile Generator
+# by github.com/aramcap
+#
+#
+#
+# GNU AFFERO GENERAL PUBLIC LICENSE
+#
+#
+# https://github.com/aramcap/vagrant
+#
+#
+
 import sys, os
 import yaml
 import jinja2 as j2

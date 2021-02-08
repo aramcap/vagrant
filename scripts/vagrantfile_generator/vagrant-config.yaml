@@ -1,9 +1,20 @@
 ---
 - name: cluster1
-  provider: docker # libvirt or virtualbox or docker
+  provider: virtualbox # libvirt or virtualbox or docker
   vms:
   - name: vm01
-    box: centos-ssh
+    box: centos/7
+    mem: 1024
+    cpu: 2
+    net:
+    - network: private_network
+      ip: 192.168.99.100
+
+# - name: cluster1
+#   provider: docker # libvirt or virtualbox or docker
+#   vms:
+#   - name: vm01
+#     box: centos-ssh
 
 # Docker provider not support net tag (ports is optional tag)
 # - name: cluster1
