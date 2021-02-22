@@ -8,10 +8,16 @@ Vagrant.configure("2") do |config|
 {% if cluster['provider'] == 'libvirt' %}
         node.vm.box = "{{ vm['box'] }}"
         node.vm.provider "libvirt" do |provider|
-            provider.uri = 'qemu+unix:///system'
+            provider.uri = 'qemu:///system'
+            provider.qemu_use_session = false
             provider.driver = 'kvm'
             provider.memory = "{{ vm['mem'] }}"
             provider.cpus = "{{ vm['cpu'] }}"
+{% if vm.disks %}
+{% for disk in vm['disks'] %}   
+            provider.storage :file, :size => '{{ disk['size'] }}'
+{% endfor %}
+{% endif %}
         end
 {% elif cluster['provider'] == 'virtualbox' %}
         node.vm.box = "{{ vm['box'] }}"
