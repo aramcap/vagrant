@@ -8,7 +8,7 @@
     cpu: 2
     net:
     - network: private_network
-      ip: 192.168.99.100
+      ip: 192.168.122.100
 
 # - name: cluster1
 #   provider: docker # libvirt or virtualbox or docker
@@ -66,7 +66,7 @@
 #       size: 20 # GBs
 #     net:
 #     - network: private_network
-#       ip: 192.168.99.100
+#       ip: 192.168.122.100
 #     - network: public_network
 #       dev: br01
 #     - network: forwarded_port
