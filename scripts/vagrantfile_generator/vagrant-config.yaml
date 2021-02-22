@@ -1,6 +1,6 @@
 ---
 - name: cluster1
-  provider: virtualbox # libvirt or virtualbox or docker
+  provider: libvirt # libvirt or virtualbox or docker
   vms:
   - name: vm01
     box: centos/7
